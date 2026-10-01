@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="ru" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>🧼 Резка мыла 3D</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:none;
+  user-select:none;-webkit-user-select:none;
+  font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-weight:700;background:#c9b08a;}
+#bg{position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse 85% 65% at 50% 42%,#f3e6d0 0%,#dcc7a3 55%,#b99a70 100%);}
+#c{position:fixed;left:0;top:0;z-index:1;display:block;touch-action:none;cursor:none;}
+
+/* HUD */
+#hud{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;gap:8px;
+  padding:10px 12px;pointer-events:none;}
+.pill{background:#fff;border-radius:50px;padding:7px 14px;font-size:.95rem;color:#333;
+  box-shadow:0 2px 8px rgba(0,0,0,.15);white-space:nowrap;}
+#bar-wrap{flex:1;height:13px;background:rgba(0,0,0,.18);border-radius:10px;overflow:hidden;}
+#bar{height:100%;width:100%;border-radius:10px;background:linear-gradient(90deg,#e65c00,#f9a825);
+  transition:width .12s;}
+
+/* Knife */
+#knife{position:fixed;left:0;top:0;z-index:150;pointer-events:none;display:none;
+  font-size:48px;line-height:1;transform:rotate(-38deg) scaleX(-1);
+  filter:drop-shadow(2px 4px 8px rgba(0,0,0,.4));}
+
+/* Bottom buttons */
+#btns{position:fixed;bottom:12px;left:10px;z-index:200;display:flex;flex-direction:column;gap:7px;}
+.bb{border-radius:50px;padding:9px 16px;font-size:.82rem;box-shadow:0 3px 10px rgba(0,0,0,.2);
+  cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;
+  border:none;font-family:inherit;font-weight:700;white-space:nowrap;color:#fff;}
+.bb:active{transform:scale(.94);}
+.bb-gold{background:linear-gradient(135deg,#f9a825,#e65c00);}
+.bb-blue{background:linear-gradient(135deg,#42a5f5,#1565c0);}
+.bb-green{background:linear-gradient(135deg,#66bb6a,#2e7d32);}
+#hint{position:fixed;bottom:18px;right:12px;color:rgba(0,0,0,.32);font-size:.78rem;
+  pointer-events:none;z-index:50;white-space:nowrap;transition:opacity .4s;}
+#toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.7);color:#fff;
+  padding:7px 18px;border-radius:50px;font-size:.8rem;opacity:0;transition:opacity .3s;
+  z-index:999;pointer-events:none;}
+#toast.show{opacity:1;}
+#err{display:none;position:fixed;bottom:0;left:0;right:0;z-index:2000;background:#b00020;color:#fff;
+  font-size:.7rem;padding:6px 10px;}
+
+/* Win overlay */
+.ov{display:none;position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.6);
+  align-items:center;justify-content:center;}
+.ov.on{display:flex;}
+.card{background:linear-gradient(135deg,#fffaf4,#ffe8c4);border-radius:26px;padding:30px 38px;
+  text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35);
+  animation:wpop .5s cubic-bezier(.34,1.56,.64,1) both;max-width:88vw;}
+@keyframes wpop{from{transform:scale(.3) rotate(-10deg);}to{transform:scale(1) rotate(0);}}
+#wem{font-size:5rem;display:block;margin-bottom:8px;
+  animation:eb .6s .1s cubic-bezier(.34,1.56,.64,1) both;}
+@keyframes eb{from{transform:scale(0);}to{transform:scale(1);}}
+.wh{font-size:1.5rem;color:#333;margin-bottom:4px;}
+.ws{color:#999;font-size:.85rem;margin-bottom:18px;}
+.wbtn{background:linear-gradient(135deg,#e65c00,#f9a825);color:#fff;border:none;border-radius:50px;
+  padding:13px 38px;font-family:inherit;font-weight:700;font-size:1.05rem;cursor:pointer;
+  box-shadow:0 6px 18px rgba(230,92,0,.4);}
+.wbtn:active{transform:scale(.95);}
+
+/* Collection */
+#cpanel{display:none;position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.75);
+  align-items:center;justify-content:center;}
+#cpanel.on{display:flex;}
+.cbox{background:#fff;border-radius:22px;width:min(360px,94%);max-height:82vh;display:flex;
+  flex-direction:column;overflow:hidden;}
+.chead{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;
+  border-bottom:1px solid #f0f0f0;flex-shrink:0;}
+.chead h2{font-size:1.2rem;color:#333;}
+.cclose{width:36px;height:36px;border-radius:50%;background:#f0f0f0;border:none;cursor:pointer;
+  font-size:1.1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#333;}
+.cclose:active{background:#ddd;}
+.cstats{padding:8px 18px 0;font-size:.82rem;color:#999;flex-shrink:0;}
+.cgrid{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;padding:12px 14px 18px;
+  overflow-y:auto;flex:1;touch-action:pan-y;}
+.ci{width:54px;height:54px;border-radius:14px;background:#f5f5f5;border:2px solid #eee;display:flex;
+  align-items:center;justify-content:center;font-size:1.75rem;position:relative;}
+.ci.found{background:linear-gradient(135deg,#fff9f0,#fff3e0);border-color:#f9a825;}
+.ci.locked{filter:grayscale(1);opacity:.22;}
+.ci .chk{position:absolute;bottom:2px;right:2px;font-size:.5rem;background:#4caf50;color:#fff;
+  border-radius:50%;width:13px;height:13px;display:flex;align-items:center;justify-content:center;}
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<canvas id="c"></canvas>
+
+<div id="hud">
+  <div class="pill">LVL <span id="hlvl">1</span></div>
+  <div id="bar-wrap"><div id="bar"></div></div>
+  <div class="pill">⭐ <span id="hscore">0</span></div>
+</div>
+
+<div id="knife">🔪</div>
+<div id="hint">Води ножом по мылу ↔</div>
+<div id="toast">💾 Прогресс сохранён</div>
+<div id="err"></div>
+
+<div id="btns">
+  <button class="bb bb-gold" onclick="openColl()">🏆 Коллекция</button>
+  <a class="bb bb-blue" href="https://www.donationalerts.com/r/xeoni7" target="_blank" rel="noopener">❤️ Поддержать</a>
+  <a class="bb bb-green" href="https://greshampopygay-png.github.io/I7-xeon-game-store-/" target="_blank" rel="noopener">🎮 Больше игр</a>
+</div>
+
+<div class="ov" id="win-ov">
+  <div class="card">
+    <span id="wem">🌟</span>
+    <div class="wh" id="wh">Находка!</div>
+    <div class="ws" id="ws"></div>
+    <button class="wbtn" onclick="nextLevel()">Следующий →</button>
+  </div>
+</div>
+
+<div id="cpanel">
+  <div class="cbox">
+    <div class="chead"><h2>🏆 Коллекция</h2><button class="cclose" onclick="closeColl()">✕</button></div>
+    <div class="cstats">Найдено: <span id="cfound">0</span> / <span id="ctotal">0</span></div>
+    <div class="cgrid" id="cgrid"></div>
+  </div>
+</div>
+
+<script>
+window.addEventListener('error', function (e) {
+  var d = document.getElementById('err');
+  if (!d) return;
+  d.textContent = 'Ошибка: ' + (e.message || '') + (e.lineno ? ' (строка ' + e.lineno + ')' : '');
+  d.style.display = 'block';
+});
+</script>
+
+<script>
+(function () {
+'use strict';
+
+/* ============================================================
+   НАСТРОЙКИ
+   ============================================================ */
+var TOTAL = 7;                 // слоёв в куске мыла
+var GX = 5, GZ = 4;            // верхний слой = сетка кубиков 5 x 4
+var W = 2.4, DP = 1.8;         // ширина и глубина мыла (мировые единицы)
+var LH = 0.34;                 // высота одного слоя
+var PLATE = 0.16;              // толщина подставки
+var H = TOTAL * LH;
+var BASE_Y = -H / 2;           // низ мыла
+var FLOOR = BASE_Y - PLATE;    // пол
+var CELL_X = W / GX, CELL_Z = DP / GZ;
+var PER_LAYER = GX * GZ;
+
+var YAW = -0.62, PITCH = 0.5, CAMD = 9;   // камера
+var GRAV = 9.5;
+var cyw = Math.cos(YAW), syw = Math.sin(YAW), cpw = Math.cos(PITCH), spw = Math.sin(PITCH);
+var LXn = -0.617, LYn = 0.771, LZn = -0.154;   // направление света (нормализовано)
+var EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji","Twemoji Mozilla",sans-serif';
+
+/* ============================================================
+   ДАННЫЕ
+   ============================================================ */
+var THEMES = [
+  { n: 'Персиковое',  l: '#fcefd8', m: '#d08050', d: '#904020' },
+  { n: 'Синее',       l: '#d8f0ff', m: '#4a85d0', d: '#1f4f9a' },
+  { n: 'Мятное',      l: '#dcffd6', m: '#45b060', d: '#1f7038' },
+  { n: 'Розовое',     l: '#ffe0ec', m: '#d84a80', d: '#8c1f55' },
+  { n: 'Лавандовое',  l: '#eee0ff', m: '#8a55d0', d: '#4a2296' },
+  { n: 'Шоколадное',  l: '#f5dcc0', m: '#8a5230', d: '#4a2412' },
+  { n: 'Красное',     l: '#ffe4dc', m: '#d8402c', d: '#921414' },
+  { n: 'Жёлтое',      l: '#fffbd6', m: '#e2b400', d: '#9c7a00' },
+  { n: 'Бирюзовое',   l: '#d8fff8', m: '#28b49a', d: '#127a64' },
+  { n: 'Оранжевое',   l: '#fff2d8', m: '#f08028', d: '#a84a12' },
+  { n: 'Изумрудное',  l: '#d6ffea', m: '#2a9a62', d: '#0f5c34' },
+  { n: 'Сиреневое',   l: '#fbe0ff', m: '#bc4ad8', d: '#84149a' },
+  { n: 'Серебряное',  l: '#f4f7fa', m: '#94a3b8', d: '#56667a' },
+  { n: 'Золотое',     l: '#fff6cc', m: '#d9a400', d: '#8f6c00' },
+  { n: 'Радужное',    l: '#ffe8f4', m: '#d070c0', d: '#6060c0', rb: true }
+];
+var RW = ['😊','🌟','🦋','🌈','🦄','💎','🐉','🌙','🍀','🔮','👑','🎭','🐬','🦊','🐱','🌺','🔥','🍭','🎀','🐠',
+          '🦁','🐯','🐸','🦜','🦩','🌸','🍓','🍇','🍉','🎸','🎺','🎻','🎹','🥁','🎨','🎪','🎠','🎡','🎢','🚀',
+          '🛸','🌍','🌊','🦅','🐙','🦑','🐡','🦈','🌋','🏔️','🦖','🐼','🐨','🦉','🐢','🦭','🍕','🍩','🍦','🧁',
+          '🎂','⚽','🏀','🎮','🎯','🧩','🪁','🎈','🎁','🔔'];
+
+/* ============================================================
+   СОСТОЯНИЕ
+   ============================================================ */
+var level = 1, score = 0, coll = [];
+var th = null, reward = '😊';
+var remaining = TOTAL, removed = 0;
+var cubes = [], aliveCount = 0;
+var chunks = [];
+var state = 'play';            // play | won
+var wonT = 0, winTimer = null;
+var travel = 0;
+var pActive = false, pId = null, lastPX = 0, lastPY = 0;
+var trail = [];
+var restore = null;
+
+var $ = function (id) { return document.getElementById(id); };
+var canvas = $('c'), ctx = canvas.getContext('2d');
+var knifeEl = $('knife'), barEl = $('bar'), hlvl = $('hlvl'), hscore = $('hscore'), hintEl = $('hint');
+var VW = 360, VH = 640, DPR = 1, CX = 180, CY = 300, F = 800;
+
+/* ============================================================
+   ЗВУК
+   ============================================================ */
+var AC = null, lastCrunch = 0, lastScrape = 0;
+function ua() {
+  try {
+    if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === 'suspended') AC.resume();
+  } catch (e) {}
+}
+function noise(dur, f0, q, vol) {
+  if (!AC) return;
+  try {
+    var sr = AC.sampleRate, n = Math.floor(sr * dur), buf = AC.createBuffer(1, n, sr), d = buf.getChannelData(0);
+    for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 1.6);
+    var s = AC.createBufferSource(); s.buffer = buf;
+    var f = AC.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = f0; f.Q.value = q;
+    var g = AC.createGain(); g.gain.value = vol;
+    s.connect(f); f.connect(g); g.connect(AC.destination); s.start();
+  } catch (e) {}
+}
+function crunch() {
+  var t = performance.now(); if (t - lastCrunch < 45) return; lastCrunch = t;
+  noise(0.06, 1300 + Math.random() * 1700, 0.9, 0.45);
+}
+function scrape() {
+  var t = performance.now(); if (t - lastScrape < 90) return; lastScrape = t;
+  noise(0.09, 700 + Math.random() * 500, 1.4, 0.18);
+}
+function pop() {
+  if (!AC) return;
+  try {
+    var o = AC.createOscillator(), g = AC.createGain(), t = AC.currentTime;
+    o.type = 'sine'; o.frequency.setValueAtTime(320, t); o.frequency.exponentialRampToValueAtTime(80, t + 0.2);
+    g.gain.setValueAtTime(0.35, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+    o.connect(g); g.connect(AC.destination); o.start(); o.stop(t + 0.3);
+  } catch (e) {}
+}
+function tring() {
+  if (!AC) return;
+  try {
+    var t = AC.currentTime;
+    [[1047, 0], [1319, 0.05], [1568, 0.1]].forEach(function (p) {
+      var o = AC.createOscillator(), g = AC.createGain();
+      o.type = 'sine'; o.frequency.value = p[0];
+      g.gain.setValueAtTime(0, t + p[1]); g.gain.linearRampToValueAtTime(0.25, t + p[1] + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, t + p[1] + 1.1);
+      o.connect(g); g.connect(AC.destination); o.start(t + p[1]); o.stop(t + p[1] + 1.2);
+    });
+  } catch (e) {}
+}
+
+/* ============================================================
+   ЦВЕТА
+   ============================================================ */
+function hex(h) { return [parseInt(h.substr(1, 2), 16), parseInt(h.substr(3, 2), 16), parseInt(h.substr(5, 2), 16)]; }
+function mix(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
+function hsl(h, s, l) {
+  h = (((h % 360) + 360) % 360) / 360;
+  var a = s * Math.min(l, 1 - l);
+  function f(n) { var k = (n + h * 12) % 12; return l - a * Math.max(-1, Math.min(k - 3, Math.min(9 - k, 1))); }
+  return [Math.round(f(0) * 255), Math.round(f(8) * 255), Math.round(f(4) * 255)];
+}
+function rgb(c, s) {
+  return 'rgb(' + Math.min(255, Math.round(c[0] * s)) + ',' + Math.min(255, Math.round(c[1] * s)) + ',' +
+         Math.min(255, Math.round(c[2] * s)) + ')';
+}
+function sideCol(i) {
+  if (th.rb) return hsl(i * 48 + level * 17, 0.62, 0.6);
+  return mix(mix(th.M, th.L, 0.28), th.D, ((TOTAL - 1 - i) / (TOTAL - 1)) * 0.22);
+}
+function topCol(i, k) { return mix(sideCol(i), th.L, k + 0.15); }
+var PLATE_TOP = [244, 236, 222], PLATE_SIDE = [206, 192, 168];
+
+/* ============================================================
+   3D-КАМЕРА
+   ============================================================ */
+var V = { x: 0, y: 0, z: 0 };
+function toView(x, y, z) {
+  var x1 = x * cyw + z * syw, z1 = -x * syw + z * cyw;
+  V.x = x1; V.y = y * cpw + z1 * spw; V.z = -y * spw + z1 * cpw + CAMD;
+}
+function rotMat(ax, ay, az) {
+  var ca = Math.cos(ax), sa = Math.sin(ax), cb = Math.cos(ay), sb = Math.sin(ay), cc = Math.cos(az), sc = Math.sin(az);
+  return [cc * cb, cc * sb * sa - sc * ca, cc * sb * ca + sc * sa,
+          sc * cb, sc * sb * sa + cc * ca, sc * sb * ca - cc * sa,
+          -sb,     cb * sa,                cb * ca];
+}
+var FACES = [
+  { n: [0, 1, 0],  v: [[-1, 1, -1], [1, 1, -1], [1, 1, 1], [-1, 1, 1]] },
+  { n: [0, -1, 0], v: [[-1, -1, -1], [1, -1, -1], [1, -1, 1], [-1, -1, 1]] },
+  { n: [1, 0, 0],  v: [[1, -1, -1], [1, -1, 1], [1, 1, 1], [1, 1, -1]] },
+  { n: [-1, 0, 0], v: [[-1, -1, -1], [-1, -1, 1], [-1, 1, 1], [-1, 1, -1]] },
+  { n: [0, 0, 1],  v: [[-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]] },
+  { n: [0, 0, -1], v: [[-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1]] }
+];
+var SX = [0, 0, 0, 0], SY = [0, 0, 0, 0];
+
+// Рисует брусок (R = матрица поворота или null). Задние грани не рисуются.
+function drawBox(cx, cy, cz, hx, hy, hz, R, topC, sideC, alpha, edge) {
+  ctx.globalAlpha = alpha;
+  for (var f = 0; f < 6; f++) {
+    var fc = FACES[f], nx = fc.n[0], ny = fc.n[1], nz = fc.n[2];
+    var ox = nx * hx, oy = ny * hy, oz = nz * hz, wx, wy, wz, fx, fy, fz;
+    if (R) {
+      wx = R[0] * nx + R[1] * ny + R[2] * nz; wy = R[3] * nx + R[4] * ny + R[5] * nz; wz = R[6] * nx + R[7] * ny + R[8] * nz;
+      fx = R[0] * ox + R[1] * oy + R[2] * oz; fy = R[3] * ox + R[4] * oy + R[5] * oz; fz = R[6] * ox + R[7] * oy + R[8] * oz;
+    } else { wx = nx; wy = ny; wz = nz; fx = ox; fy = oy; fz = oz; }
+    toView(cx + fx, cy + fy, cz + fz);
+    var ccx = V.x, ccy = V.y, ccz = V.z;
+    var n1x = wx * cyw + wz * syw, n1z = -wx * syw + wz * cyw;
+    var nvy = wy * cpw + n1z * spw, nvz = -wy * spw + n1z * cpw;
+    if (n1x * ccx + nvy * ccy + nvz * ccz >= 0) continue;      // грань смотрит от камеры
+    for (var k = 0; k < 4; k++) {
+      var v = fc.v[k], lx = v[0] * hx, ly = v[1] * hy, lz = v[2] * hz, px, py, pz;
+      if (R) { px = R[0] * lx + R[1] * ly + R[2] * lz; py = R[3] * lx + R[4] * ly + R[5] * lz; pz = R[6] * lx + R[7] * ly + R[8] * lz; }
+      else { px = lx; py = ly; pz = lz; }
+      toView(cx + px, cy + py, cz + pz);
+      SX[k] = CX + F * V.x / V.z; SY[k] = CY - F * V.y / V.z;
+    }
+    var diff = wx * LXn + wy * LYn + wz * LZn; if (diff < 0) diff = 0;
+    var sh = 0.74 + 0.32 * diff, base;
+    if (wy > 0.55) base = topC; else { base = sideC; if (wy < -0.55) sh *= 0.65; }
+    ctx.fillStyle = rgb(base, sh);
+    ctx.beginPath();
+    ctx.moveTo(SX[0], SY[0]); ctx.lineTo(SX[1], SY[1]); ctx.lineTo(SX[2], SY[2]); ctx.lineTo(SX[3], SY[3]);
+    ctx.closePath(); ctx.fill();
+    if (edge) { ctx.strokeStyle = wy > 0.55 ? 'rgba(255,255,255,0.35)' : edge; ctx.lineWidth = 1; ctx.lineJoin = 'round'; ctx.stroke(); }
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* ============================================================
+   РАЗМЕРЫ ЭКРАНА
+   ============================================================ */
+function resize() {
+  var w = window.innerWidth || document.documentElement.clientWidth || 360;
+  var h = window.innerHeight || document.documentElement.clientHeight || 640;
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.round(w * DPR); canvas.height = Math.round(h * DPR);
+  canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+  VW = w; VH = h;
+  var top = 64, bottom = h > 620 ? 150 : 40;
+  var avail = Math.max(200, h - top - bottom);
+  CX = w / 2; CY = top + avail / 2 + 8;
+  F = CAMD * Math.min(0.80 * w / 3.7, 0.84 * avail / 3.8);
+}
+
+/* ============================================================
+   УРОВЕНЬ
+   ============================================================ */
+function buildCubes() {
+  cubes = [];
+  for (var iz = 0; iz < GZ; iz++) for (var ix = 0; ix < GX; ix++) {
+    cubes.push({ x: -W / 2 + (ix + 0.5) * CELL_X, z: -DP / 2 + (iz + 0.5) * CELL_Z,
+                 alive: true, sx: 0, sy: 0, depth: 0 });
+  }
+  aliveCount = cubes.length;
+}
+function initLevel(rs) {
+  var t = THEMES[(level - 1) % THEMES.length];
+  th = { n: t.n, L: hex(t.l), M: hex(t.m), D: hex(t.d), rb: !!t.rb };
+  var unused = RW.filter(function (r) { return coll.indexOf(r) === -1; });
+  var pool = unused.length ? unused : RW;
+  reward = pool[Math.floor(Math.random() * pool.length)];
+  removed = 0;
+  if (rs) {
+    if (rs.rw && RW.indexOf(rs.rw) !== -1) reward = rs.rw;
+    if (rs.rm > 0 && rs.rm < TOTAL) removed = rs.rm;
+  }
+  remaining = TOTAL - removed;
+  state = 'play'; wonT = 0; travel = 0; trail = [];
+  if (winTimer) { clearTimeout(winTimer); winTimer = null; }
+  buildCubes();
+  updateHUD();
+}
+function updateHUD() {
+  hlvl.textContent = level; hscore.textContent = score;
+  var p = remaining <= 0 ? 0 : ((remaining - 1) * PER_LAYER + aliveCount) / (TOTAL * PER_LAYER);
+  barEl.style.width = (p * 100) + '%';
+}
+
+/* ============================================================
+   СОХРАНЕНИЕ
+   ============================================================ */
+function saveState(lv, rm, rw, toast) {
+  try {
+    localStorage.setItem('sc_l', lv); localStorage.setItem('sc_s', score);
+    localStorage.setItem('sc_c', JSON.stringify(coll));
+    localStorage.setItem('sc_rm', rm); localStorage.setItem('sc_rw', rw || '');
+  } catch (e) {}
+  if (toast) showToast();
+}
+function saveNow() { if (state === 'play') saveState(level, removed, reward, false); }
+function loadState() {
+  try {
+    var l = localStorage.getItem('sc_l'), s = localStorage.getItem('sc_s'), c = localStorage.getItem('sc_c');
+    if (l) level = parseInt(l, 10) || 1;
+    if (s) score = parseInt(s, 10) || 0;
+    if (c) coll = JSON.parse(c) || [];
+    restore = { rm: parseInt(localStorage.getItem('sc_rm'), 10) || 0, rw: localStorage.getItem('sc_rw') || '' };
+  } catch (e) { restore = null; }
+}
+var toastTimer = null;
+function showToast() {
+  var t = $('toast'); t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove('show'); }, 1700);
+}
+document.addEventListener('visibilitychange', function () { if (document.hidden) saveNow(); });
+window.addEventListener('pagehide', saveNow);
+
+/* ============================================================
+   ОБЛОМКИ (физика)
+   ============================================================ */
+function spawnChunk(x, y, z, hx, hy, hz, topC, sideC, dirX, k, life) {
+  var swipe = dirX * (0.4 + Math.random() * 1.1) * k;
+  chunks.push({
+    x: x, y: y, z: z,
+    vx: swipe * cyw + x * 0.5 + (Math.random() - 0.5) * 0.9,
+    vy: (2.0 + Math.random() * 2.2) * k,
+    vz: swipe * syw + z * 0.6 + (Math.random() - 0.5) * 1.3,
+    ax: Math.random() * 6, ay: Math.random() * 6, az: Math.random() * 6,
+    wx: (Math.random() - 0.5) * 15, wy: (Math.random() - 0.5) * 15, wz: (Math.random() - 0.5) * 15,
+    hx: hx, hy: hy, hz: hz, r: Math.max(hx, hy, hz) * 0.8,
+    life: life, top: topC, side: sideC, depth: 0
+  });
+  if (chunks.length > 320) chunks.splice(0, chunks.length - 320);
+}
+function spawnCrumbs(x, y, z, n, dirX, topC, sideC) {
+  for (var i = 0; i < n; i++) {
+    var s = 0.05 + Math.random() * 0.08;
+    spawnChunk(x + (Math.random() - 0.5) * 0.3, y + (Math.random() - 0.3) * 0.2, z + (Math.random() - 0.5) * 0.3,
+               s, s * 0.8, s, Math.random() < 0.5 ? topC : th.L, sideC, dirX, 1.25, 0.7 + Math.random() * 0.5);
+  }
+}
+
+/* ============================================================
+   РЕЗКА
+   ============================================================ */
+function cubeY() { return BASE_Y + (remaining - 1) * LH + LH / 2; }
+function projCube(c) {
+  toView(c.x, BASE_Y + remaining * LH, c.z);
+  c.sx = CX + F * V.x / V.z; c.sy = CY - F * V.y / V.z;
+}
+function removeCube(c, dirX) {
+  c.alive = false; aliveCount--;
+  var i = remaining - 1, y = cubeY(), tc = topCol(i, 0.45), sc = sideCol(i);
+  spawnChunk(c.x, y, c.z, CELL_X / 2 * 0.8, LH / 2 * 0.8, CELL_Z / 2 * 0.8, tc, sc, dirX, 1, 0.9 + Math.random() * 0.5);
+  spawnCrumbs(c.x, y, c.z, 3, dirX, tc, sc);
+  score += 3; crunch();
+  if (aliveCount <= 0) layerDone(dirX); else updateHUD();
+}
+function layerDone(dirX) {
+  var y = BASE_Y + remaining * LH, i = remaining - 1;
+  for (var k = 0; k < 10; k++) {
+    spawnCrumbs((Math.random() - 0.5) * W, y, (Math.random() - 0.5) * DP, 1, dirX, topCol(i, 0.45), sideCol(i));
+  }
+  removed++; remaining--; score += 40 + removed * 10;
+  pop(); travel = 0;
+  if (remaining <= 0) {
+    state = 'won'; wonT = 0; pActive = false; hideKnife();
+    if (coll.indexOf(reward) === -1) coll.push(reward);
+    saveState(level + 1, 0, '', true);
+    tring(); setTimeout(tring, 380);
+    winTimer = setTimeout(showWin, 1200);
+  } else {
+    buildCubes();
+    saveState(level, removed, reward, false);
+  }
+  updateHUD();
+}
+function nearestAlive(px, py) {
+  var best = null, bd = 1e9;
+  for (var i = 0; i < cubes.length; i++) {
+    var c = cubes[i]; if (!c.alive) continue;
+    projCube(c);
+    var d = Math.sqrt((c.sx - px) * (c.sx - px) + (c.sy - py) * (c.sy - py));
+    if (d < bd) { bd = d; best = c; }
+  }
+  return best ? { c: best, d: bd } : null;
+}
+function cutSegment(x0, y0, x1, y1) {
+  if (state !== 'play') return;
+  var dx = x1 - x0, dy = y1 - y0, dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist < 0.5) return;
+  var cubePx = F * CELL_X / CAMD, R = cubePx * 0.62;
+  var steps = Math.max(1, Math.ceil(dist / (R * 0.6))), dirX = dx >= 0 ? 1 : -1;
+
+  // 1) всё, что касается лезвия по пути
+  for (var s = 1; s <= steps; s++) {
+    var px = x0 + dx * s / steps, py = y0 + dy * s / steps, list = cubes;
+    for (var i = 0; i < list.length; i++) {
+      var c = list[i]; if (!c.alive) continue;
+      projCube(c);
+      if ((c.sx - px) * (c.sx - px) + (c.sy - py) * (c.sy - py) < R * R) {
+        removeCube(c, dirX);
+        if (state !== 'play' || list !== cubes) return;
+      }
+    }
+  }
+  // 2) чем дольше водишь рядом с мылом — тем больше откалывается
+  var nr = nearestAlive(x1, y1);
+  if (nr && nr.d < cubePx * 2.2) {
+    scrape();
+    if (Math.random() < 0.6) spawnCrumbs(nr.c.x, cubeY() + LH / 2, nr.c.z, 1, dirX, topCol(remaining - 1, 0.45), sideCol(remaining - 1));
+    travel += dist;
+    var STEP = cubePx * 0.5, list2 = cubes;
+    while (travel >= STEP && aliveCount > 0) {
+      travel -= STEP;
+      var n2 = nearestAlive(x1, y1);
+      if (!n2) break;
+      removeCube(n2.c, dirX);
+      if (state !== 'play' || list2 !== cubes) { travel = 0; break; }
+    }
+  } else travel = 0;
+}
+
+/* ============================================================
+   ОБНОВЛЕНИЕ
+   ============================================================ */
+function update(dt) {
+  for (var i = chunks.length - 1; i >= 0; i--) {
+    var c = chunks[i];
+    c.vy -= GRAV * dt;
+    c.x += c.vx * dt; c.y += c.vy * dt; c.z += c.vz * dt;
+    c.ax += c.wx * dt; c.ay += c.wy * dt; c.az += c.wz * dt;
+    if (c.y < FLOOR + c.r) {
+      c.y = FLOOR + c.r;
+      if (c.vy < 0) c.vy *= -0.32;
+      c.vx *= 0.75; c.vz *= 0.75; c.wx *= 0.7; c.wy *= 0.7; c.wz *= 0.7;
+    }
+    c.life -= dt;
+    if (c.life <= 0) chunks.splice(i, 1);
+  }
+  if (state === 'won') wonT += dt;
+}
+
+/* ============================================================
+   ОТРИСОВКА
+   ============================================================ */
+function drawGroundShadow() {
+  toView(0, FLOOR, 0);
+  var sx = CX + F * V.x / V.z, sy = CY - F * V.y / V.z, rx = F * (W * 0.95) / V.z;
+  ctx.save(); ctx.translate(sx, sy); ctx.scale(1, spw);
+  var g = ctx.createRadialGradient(0, 0, rx * 0.25, 0, 0, rx);
+  g.addColorStop(0, 'rgba(0,0,0,0.30)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, rx, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+function drawEmoji() {
+  var size, wy, alpha = 1, flat = 1;
+  if (state === 'won') {
+    var s = Math.min(1, wonT / 0.4), e = 1 - Math.pow(1 - s, 3);
+    var bounce = 1 + 0.12 * Math.sin(wonT * 7) * Math.exp(-wonT * 2.2);
+    size = 1.75 * e * bounce; wy = BASE_Y + 0.1 + size * 0.5;
+  } else {
+    if (removed < 1) return;
+    var r = removed / TOTAL;
+    size = 0.55 + 0.95 * r; alpha = 0.3 + 0.7 * r; flat = 0.72;
+    wy = BASE_Y + (remaining - 1) * LH + 0.01;
+  }
+  if (size <= 0.01) return;
+  toView(0, wy, 0);
+  var px = F * size / V.z;
+  ctx.save();
+  ctx.translate(CX + F * V.x / V.z, CY - F * V.y / V.z);
+  ctx.scale(1, flat); ctx.globalAlpha = alpha;
+  ctx.font = Math.round(px) + 'px ' + EMOJI_FONT;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(reward, 0, 0);
+  ctx.restore();
+}
+function drawSoap() {
+  drawBox(0, BASE_Y - PLATE / 2, 0, W / 2 + 0.25, PLATE / 2, DP / 2 + 0.25, null, PLATE_TOP, PLATE_SIDE, 1, 'rgba(0,0,0,.18)');
+  if (remaining > 0) {
+    for (var i = 0; i < remaining - 1; i++) {
+      drawBox(0, BASE_Y + i * LH + LH / 2, 0, W / 2, LH / 2, DP / 2, null, topCol(i, 0.6), sideCol(i), 1, 'rgba(0,0,0,.22)');
+    }
+  }
+  drawEmoji();
+  if (remaining <= 0) return;
+  var top = remaining - 1, y = cubeY(), tc = topCol(top, 0.45), sc = sideCol(top), list = [], k;
+  for (k = 0; k < cubes.length; k++) {
+    if (!cubes[k].alive) continue;
+    toView(cubes[k].x, y, cubes[k].z); cubes[k].depth = V.z; list.push(cubes[k]);
+  }
+  list.sort(function (a, b) { return b.depth - a.depth; });
+  for (k = 0; k < list.length; k++) {
+    drawBox(list[k].x, y, list[k].z, CELL_X / 2, LH / 2, CELL_Z / 2, null, tc, sc, 1, 'rgba(0,0,0,.10)');
+  }
+}
+function drawChunks() {
+  var n = chunks.length, i; if (!n) return;
+  for (i = 0; i < n; i++) { toView(chunks[i].x, chunks[i].y, chunks[i].z); chunks[i].depth = V.z; }
+  chunks.sort(function (a, b) { return b.depth - a.depth; });
+  for (i = 0; i < n; i++) {
+    var c = chunks[i], a = Math.min(1, c.life / 0.4), sc = 0.45 + 0.55 * a;
+    drawBox(c.x, c.y, c.z, c.hx * sc, c.hy * sc, c.hz * sc, rotMat(c.ax, c.ay, c.az), c.top, c.side, a, 'rgba(0,0,0,.15)');
+  }
+}
+function drawTrail(ts) {
+  while (trail.length && ts - trail[0].t > 240) trail.shift();
+  if (trail.length < 2) return;
+  ctx.lineCap = 'round';
+  for (var i = 1; i < trail.length; i++) {
+    var a = 1 - (ts - trail[i].t) / 240; if (a <= 0) continue;
+    ctx.strokeStyle = 'rgba(255,255,255,' + (a * 0.75).toFixed(3) + ')';
+    ctx.lineWidth = 1 + 4 * a;
+    ctx.beginPath(); ctx.moveTo(trail[i - 1].x, trail[i - 1].y); ctx.lineTo(trail[i].x, trail[i].y); ctx.stroke();
+  }
+}
+function render(ts) {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.clearRect(0, 0, VW, VH);
+  drawGroundShadow(); drawSoap(); drawChunks(); drawTrail(ts);
+}
+
+/* ============================================================
+   ВВОД (только по холсту — кнопки и окна работают как обычно)
+   ============================================================ */
+function showKnife(x, y) {
+  knifeEl.style.display = 'block'; knifeEl.style.left = (x - 28) + 'px'; knifeEl.style.top = (y - 46) + 'px';
+}
+function hideKnife() { knifeEl.style.display = 'none'; }
+canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+canvas.addEventListener('pointerdown', function (e) {
+  ua(); e.preventDefault();
+  pActive = true; pId = e.pointerId; lastPX = e.clientX; lastPY = e.clientY;
+  try { canvas.setPointerCapture(e.pointerId); } catch (x) {}
+  showKnife(e.clientX, e.clientY);
+});
+canvas.addEventListener('pointermove', function (e) {
+  showKnife(e.clientX, e.clientY);
+  if (!pActive || e.pointerId !== pId) return;
+  var x = e.clientX, y = e.clientY;
+  trail.push({ x: x, y: y, t: performance.now() });
+  if (trail.length > 40) trail.shift();
+  var x0 = lastPX, y0 = lastPY; lastPX = x; lastPY = y;
+  if (hintEl.style.opacity !== '0') hintEl.style.opacity = '0';
+  cutSegment(x0, y0, x, y);
+});
+function endPointer(e) {
+  if (e.pointerId !== pId) return;
+  pActive = false; pId = null;
+  if (e.pointerType && e.pointerType !== 'mouse') hideKnife();
+}
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+canvas.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') hideKnife(); });
+
+/* ============================================================
+   ОКНА
+   ============================================================ */
+function showWin() {
+  hideKnife();
+  $('wem').textContent = reward;
+  $('wh').textContent = 'Находка: ' + reward;
+  $('ws').textContent = th.n + ' мыло · Уровень ' + level;
+  $('win-ov').classList.add('on');
+}
+window.nextLevel = function () {
+  $('win-ov').classList.remove('on');
+  level++;
+  initLevel(null);
+  saveState(level, 0, reward, false);
+};
+window.openColl = function () {
+  hideKnife(); pActive = false;
+  var grid = $('cgrid'); grid.innerHTML = ''; var found = 0;
+  RW.forEach(function (em) {
+    var ok = coll.indexOf(em) !== -1; if (ok) found++;
+    var d = document.createElement('div'); d.className = 'ci ' + (ok ? 'found' : 'locked'); d.textContent = em;
+    if (ok) { var k = document.createElement('div'); k.className = 'chk'; k.textContent = '✓'; d.appendChild(k); }
+    grid.appendChild(d);
+  });
+  $('cfound').textContent = found; $('ctotal').textContent = RW.length;
+  $('cpanel').classList.add('on');
+};
+window.closeColl = function () { $('cpanel').classList.remove('on'); };
+
+/* ============================================================
+   ЗАПУСК
+   ============================================================ */
+var lastTs = 0, errShown = false;
+function frame(ts) {
+  requestAnimationFrame(frame);
+  if (!lastTs) lastTs = ts;
+  var dt = (ts - lastTs) / 1000; lastTs = ts;
+  if (dt > 0.05) dt = 0.05; if (dt < 0) dt = 0;
+  try { update(dt); render(ts); }
+  catch (e) {
+    if (!errShown) { errShown = true; var d = $('err'); d.textContent = 'Ошибка: ' + e.message; d.style.display = 'block'; }
+  }
+}
+loadState();
+resize();
+initLevel(restore);
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', function () { setTimeout(resize, 200); });
+window.addEventListener('load', resize);
+requestAnimationFrame(frame);
+
+// для тестов
+window.__soap = { get state() { return { level: level, score: score, remaining: remaining, removed: removed, alive: aliveCount, chunks: chunks.length, st: state }; }, F: function () { return F; } };
+})();
+</script>
+</body>
+</html>
